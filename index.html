@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>해시계 64 — 제1코스: 해시계 성역</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bungee&family=Fredoka:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="game-container"></div>
+
+    <!-- ==================== PAINTING SELECT OVERLAY ==================== -->
+    <div id="painting-overlay" class="overlay-screen">
+      <div class="painting-shell">
+        <div class="course-eyebrow">해시계 64 • 제1코스</div>
+        <h1 class="course-title">해시계 성역</h1>
+        <p class="course-tagline">
+          N64 감성의 3D 모험 × 실시간 <strong>낮 ⇄ 밤</strong> 세계 전환
+        </p>
+
+        <div class="painting-main-grid">
+          <div class="painting-frame-wrap" id="painting-trigger" title="클릭해서 그림 속으로!">
+            <div class="gold-frame">
+              <canvas id="painting-canvas" width="380" height="270"></canvas>
+              <div class="painting-prompt">그림 클릭 또는 [SPACE]</div>
+            </div>
+          </div>
+
+          <div class="mission-panel">
+            <div class="mission-panel-header">도전할 파워스타를 선택하세요</div>
+            <div id="mission-list" class="mission-list"></div>
+            <div id="mission-hint-box" class="mission-hint-box"></div>
+            <button id="enter-stage-btn" class="primary-n64-btn">
+              ★ 그림 속으로 출발! ★
+            </button>
+          </div>
+        </div>
+
+        <div class="quick-controls-strip">
+          <span><kbd>WASD</kbd> 이동</span>
+          <span><kbd>Space</kbd> 점프 / 3단 점프 / 벽차기</span>
+          <span><kbd>Shift</kbd> 웅크리기 / 멀리뛰기 / 엉덩이 찍기</span>
+          <span><kbd>E</kbd>/<kbd>LMB</kbd> 다이빙</span>
+          <span><kbd>F</kbd>/<kbd>RMB</kbd> <strong>낮 ⇄ 밤 전환</strong></span>
+          <span><kbd>R</kbd> <strong>시간의 잔상</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== IN-GAME N64 HUD ==================== -->
+    <div id="hud" class="hud hidden">
+      <!-- Top Row -->
+      <div class="hud-top">
+        <!-- Classic SM64 8-Slice Power Pie Meter -->
+        <div class="power-meter-card">
+          <svg id="power-pie-svg" viewBox="0 0 100 100" width="76" height="76"></svg>
+          <div class="power-label">체력</div>
+        </div>
+
+        <!-- 시점 정렬 Sol / Luna Sundial Medallion -->
+        <div class="phase-medallion-wrap">
+          <button id="phase-hud-btn" class="phase-medallion sol" title="낮·밤 전환 [F / 마우스 오른쪽]">
+            <span class="phase-icon" id="phase-icon">☀</span>
+            <div class="phase-text-col">
+              <span class="phase-title" id="phase-title">낮의 세계</span>
+              <span class="phase-sub" id="phase-sub">움직이는 태엽 • [F] / 우클릭</span>
+            </div>
+          </button>
+          <div class="echo-pill" title="시간의 잔상 발판 생성 [R]">
+            <kbd>R</kbd> 시간의 잔상
+          </div>
+        </div>
+
+        <!-- Classic Collectathon Counters -->
+        <div class="counters-card">
+          <div class="counter-row stars-row">
+            <span class="c-icon gold">★</span>
+            <span id="hud-stars">0 / 5</span>
+          </div>
+          <div class="counter-row coins-row">
+            <span class="c-icon yellow">●</span>
+            <span id="hud-coins">00</span>
+          </div>
+          <div class="counter-row red-row">
+            <span class="c-icon crimson">◆</span>
+            <span id="hud-red-coins">0 / 8</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Event Bars (Chrono-Ring Timer & Summit Boss HP) -->
+      <div id="sprint-bar" class="event-banner sprint hidden">
+        <span class="sprint-clock" id="sprint-timer">36.0s</span>
+        <span class="sprint-progress" id="sprint-rings">고리: 0 / 7</span>
+      </div>
+
+      <div id="boss-bar" class="event-banner boss hidden">
+        <span class="boss-name">👑 시계왕 호롤로지</span>
+        <div id="boss-pips" class="boss-pips"></div>
+        <span class="boss-tip">내려찍기 회피 → 밤으로 [F] → 핵에 엉덩이 찍기!</span>
+      </div>
+
+      <!-- Acrobatic Move Callout -->
+      <div id="move-banner" class="move-banner"></div>
+
+      <!-- Wooden Signpost Speech Box -->
+      <div id="sign-dialog" class="sign-dialog hidden">
+        <div id="sign-title" class="sign-title"></div>
+        <div id="sign-body" class="sign-body"></div>
+      </div>
+
+      <!-- Pointer Lock Hint -->
+      <div id="pointer-hint" class="pointer-hint">
+        화면을 클릭하면 마우스로 시점 조작 • <kbd>Q</kbd>/<kbd>C</kbd> 회전 • <kbd>V</kbd> 시점 정렬
+      </div>
+
+      <!-- Bottom-Right Utility Pills -->
+      <div class="hud-bottom-right">
+        <button id="btn-moves" class="hud-pill"><kbd>H</kbd> 기술 안내</button>
+        <button id="btn-missions" class="hud-pill"><kbd>Tab</kbd> 별과 동전 탐지</button>
+        <button id="btn-audio" class="hud-pill"><kbd>M</kbd> 소리: 꺼짐</button>
+        <button id="btn-painting" class="hud-pill"><kbd>P</kbd> 그림으로</button>
+      </div>
+    </div>
+
+    <!-- ==================== MOVESET DRAWER [H] ==================== -->
+    <div id="moveset-panel" class="floating-card hidden">
+      <div class="card-header">
+        <span>모험가의 기술 안내</span>
+        <button id="close-moves-btn" class="close-x">✕</button>
+      </div>
+      <div class="moves-grid">
+        <div><strong>3단 점프</strong><span>착지할 때마다 <kbd>Space</kbd> 달리면서 3회</span></div>
+        <div><strong>멀리뛰기</strong><span>달리면서 누르기 <kbd>Shift</kbd> + 누르기 <kbd>Space</kbd></span></div>
+        <div><strong>뒤돌기</strong><span>멈춘 상태에서 누르기 <kbd>Shift</kbd> + 누르기 <kbd>Space</kbd></span></div>
+        <div><strong>옆돌기</strong><span>달리다가 반대 방향 + 누르기 <kbd>Space</kbd></span></div>
+        <div><strong>벽차기</strong><span>공중에서 벽·얼음에 닿기 + 누르기 <kbd>Space</kbd></span></div>
+        <div><strong>엉덩이 찍기</strong><span>공중에서 누르기 <kbd>Shift</kbd> (<kbd>Space</kbd> 착지 직후 = 도약!)</span></div>
+        <div><strong>다이빙과 구르기</strong><span><kbd>E</kbd> / <kbd>LMB</kbd> → 누르기 <kbd>Space</kbd> 미끄러지는 중</span></div>
+        <div><strong>낮 ⇄ 밤 전환</strong><span><kbd>F</kbd> / <kbd>RMB</kbd> — 폭포를 얼리고 톱니와 적을 멈춥니다!</span></div>
+        <div><strong>시간의 잔상</strong><span><kbd>R</kbd> — 발밑이나 앞쪽에 임시 발판을 만듭니다!</span></div>
+      </div>
+    </div>
+
+    <!-- ==================== STAR RADAR & TRACKER [TAB] ==================== -->
+    <div id="tracker-panel" class="floating-card tracker hidden">
+      <div class="card-header">
+        <span>제1코스 파워스타 (빨간 동전 빛기둥 표시 중!)</span>
+        <button id="close-tracker-btn" class="close-x">✕</button>
+      </div>
+      <div id="tracker-list" class="tracker-list"></div>
+    </div>
+
+    <!-- ==================== STAR GET CELEBRATION MODAL ==================== -->
+    <div id="star-modal" class="star-modal hidden">
+      <div class="star-modal-card">
+        <div class="star-burst-icon">★</div>
+        <div class="star-kicker">파워스타 획득!</div>
+        <h2 id="star-modal-title">시계왕 호롤로지의 왕관</h2>
+        <p id="star-modal-tally">모은 별: 1 / 5</p>
+        <div class="star-modal-actions">
+          <button id="star-continue-btn" class="primary-n64-btn">계속 탐험하기</button>
+          <button id="star-painting-btn" class="secondary-n64-btn">그림으로 돌아가기</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
